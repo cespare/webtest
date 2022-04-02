@@ -6,7 +6,7 @@
 //
 // The scripts, described below, are run against http.Handler implementations.
 //
-// The test functions TestHandler takes a *testing.T and a glob pattern,
+// The test function TestHandler takes a *testing.T and a glob pattern,
 // which must match at least one file.
 // It creates a subtest of the top-level test for each script.
 // Within each per-script subtest, it creates a per-case subtest
