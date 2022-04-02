@@ -4,21 +4,17 @@
 
 // Package webtest implements script-based testing for web servers.
 //
-// The scripts, described below, can be run against http.Handler
-// implementations or against running servers. Testing against an
-// http.Handler makes it easier to test handlers serving multiple sites
-// as well as scheme-based features like redirecting to HTTPS.
-// Testing against a running server provides a more complete end-to-end test.
+// The scripts, described below, are run against http.Handler implementations.
 //
-// The test functions TestHandler and TestServer take a *testing.T
-// and a glob pattern, which must match at least one file.
-// They create a subtest of the top-level test for each script.
-// Within each per-script subtest, they create a per-case subtest
+// The test functions TestHandler takes a *testing.T and a glob pattern,
+// which must match at least one file.
+// It creates a subtest of the top-level test for each script.
+// Within each per-script subtest, it creates a per-case subtest
 // for each case in the script, making it easy to run selected cases.
 //
-// The functions CheckHandler and CheckServer are similar but do
-// not require a *testing.T, making them suitable for use in other contexts.
-// They run the entire script and return a multiline error summarizing
+// The function CheckHandler is similar but does not require a *testing.T,
+// making it suitable for use in other contexts.
+// It runs the entire script and returns a multiline error summarizing
 // any problems.
 //
 // Scripts
