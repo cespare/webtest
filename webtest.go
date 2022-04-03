@@ -229,10 +229,12 @@ func check(fsys fs.FS, glob string, do func(*case_) error) error {
 // TestHandler runs the test script files matched by glob
 // against the handler h.
 func TestHandler(t *testing.T, glob string, h http.Handler) {
+	t.Helper()
 	test(t, glob, func(c *case_) error { return c.runHandler(h) })
 }
 
 func test(t *testing.T, glob string, do func(*case_) error) {
+	t.Helper()
 	files, err := filepath.Glob(glob)
 	if err != nil {
 		t.Fatal(err)
@@ -242,6 +244,7 @@ func test(t *testing.T, glob string, do func(*case_) error) {
 	}
 	for _, file := range files {
 		t.Run(filepath.Base(file), func(t *testing.T) {
+			t.Helper()
 			data, err := ioutil.ReadFile(file)
 			if err != nil {
 				t.Fatal(err)
@@ -252,6 +255,7 @@ func test(t *testing.T, glob string, do func(*case_) error) {
 			}
 			for _, c := range script.cases {
 				t.Run(c.method+"/"+strings.TrimPrefix(c.url, "/"), func(t *testing.T) {
+					t.Helper()
 					if err := do(c); err != nil {
 						t.Fatal(err)
 					}
