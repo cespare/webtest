@@ -39,15 +39,22 @@
 // Following this line, the request can be further customized using
 // lines of the form
 //
-//	<verb> <text>
+//	<verb> [<key>] <text>
 //
-// where the verb is a single space-separated word and the text is arbitrary text
-// to the end of the line, or multiline text (described below).
+// where the verb and key are single space-separated words and the text is
+// arbitrary text to the end of the line, or multiline text (described below).
+// Whether there is a key depends on the <verb>.
 //
 // The possible values for <verb> are as follows.
 //
 // The verb “hint” specifies text to be printed if the test case fails, as a
 // hint about what might be wrong.
+//
+// The verb “reqheader” takes the header name as the <key> and sets a header
+// value for the request:
+//
+//	GET /x.png
+//	reqheader If-None-Match: "97efa32"
 //
 // The verbs “postbody”, “postquery”, and “posttype” customize a POST request.
 //
@@ -276,6 +283,7 @@ type case_ struct {
 	line      int
 	method    string
 	url       string
+	headers   [][2]string
 	postbody  string
 	postquery string
 	posttype  string
@@ -369,6 +377,9 @@ func (c *case_) newRequest(u string) (*http.Request, error) {
 	}
 	if typ != "" {
 		r.Header.Set("Content-Type", typ)
+	}
+	for _, kv := range c.headers {
+		r.Header.Set(kv[0], kv[1])
 	}
 	return r, nil
 }
@@ -541,6 +552,12 @@ func parseScript(file, text string) (*script, error) {
 
 		if lastLineWasBlank || current.Case == nil {
 			return nil, errorf("missing GET/HEAD/POST at start of check")
+		}
+
+		if what == "reqheader" {
+			k, v := splitOneField(args)
+			current.Case.headers = append(current.Case.headers, [2]string{k, v})
+			continue
 		}
 
 		// Look for case metadata.

@@ -12,3 +12,7 @@ POST http://example.com/echo
 postquery
 	q=x y
 body contains "q": ["x y"]
+
+GET http://example.com/echo
+reqheader Custom-Header abc
+header Custom-Header == abc

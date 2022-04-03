@@ -20,6 +20,9 @@ func TestWebtestHandler(t *testing.T) {
 
 func echo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	if h := r.Header.Get("Custom-Header"); h != "" {
+		w.Header().Set("Custom-Header", h)
+	}
 	fmt.Fprintf(w, "%v %v\n", r.Method, r.RequestURI)
 	if err := r.ParseForm(); err != nil {
 		fmt.Fprintf(w, "parsing form: %v\n", err)
