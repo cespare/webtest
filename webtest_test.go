@@ -23,6 +23,11 @@ func echo(w http.ResponseWriter, r *http.Request) {
 	if h := r.Header.Get("Custom-Header"); h != "" {
 		w.Header().Set("Custom-Header", h)
 	}
+	if ck, _ := r.Cookie("custom-cookie"); ck != nil {
+		ck.Path = "/"
+		ck.MaxAge = 30
+		http.SetCookie(w, ck)
+	}
 	fmt.Fprintf(w, "%v %v\n", r.Method, r.RequestURI)
 	if err := r.ParseForm(); err != nil {
 		fmt.Fprintf(w, "parsing form: %v\n", err)

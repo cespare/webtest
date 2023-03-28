@@ -103,12 +103,13 @@
 //
 // The possible values for <value> are:
 //
-//		body - the full response body
-//		code - the HTTP status code
-//	  cookie <key> - the value of the cookie in the Set-Cookie response header
-//		header <key> - the value in the header line with the given key
-//		redirect - the target of a redirect, as found in the Location header
-//		trimbody - the response body, trimmed
+//	body - the full response body
+//	code - the HTTP status code
+//	cookie <key> - the value of the cookie in the Set-Cookie response header
+//	header <key> - the value in the header line with the given key
+//	rawcookie <key> - the raw encoding of the cookie identified by <key> in the Set-Cookie response header
+//	redirect - the target of a redirect, as found in the Location header
+//	trimbody - the response body, trimmed
 //
 // If a case contains no check of “code”, then it defaults to checking that
 // the HTTP status code is 200, as described above, with one exception:
@@ -118,6 +119,12 @@
 // The “trimbody” value is the body with all runs of spaces and tabs
 // reduced to single spaces, leading and trailing spaces removed on
 // each line, and blank lines removed.
+//
+// The "rawcookie" value includes the cookie name and all the following
+// properties of the cookie as per the HTTP spec, so for example the value
+// could be:
+//
+//	ssn=secretid; path=/; secure; HttpOnly; SameSite=Lax
 //
 // The possible operators for <op> are:
 //
@@ -370,10 +377,14 @@ func (c *case_) check(resp *http.Response, body string) error {
 			value = trim(body)
 		case "code":
 			value = fmt.Sprint(resp.StatusCode)
-		case "cookie":
+		case "cookie", "rawcookie":
 			for _, ck := range resp.Cookies() {
 				if ck.Name == chk.whatArg {
-					value = ck.Value
+					if chk.what == "cookie" {
+						value = ck.Value
+					} else {
+						value = ck.String()
+					}
 					break
 				}
 			}
@@ -563,15 +574,10 @@ func parseScript(file, text string) (*script, error) {
 		switch what {
 		case "body", "code", "redirect":
 			// no WhatArg
-		case "header":
+		case "header", "cookie", "rawcookie":
 			chk.whatArg, args = splitOneField(args)
 			if chk.whatArg == "" {
-				return nil, errorf("missing header name")
-			}
-		case "cookie":
-			chk.whatArg, args = splitOneField(args)
-			if chk.whatArg == "" {
-				return nil, errorf("missing cookie name")
+				return nil, errorf("missing %s name", what)
 			}
 		}
 
