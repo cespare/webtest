@@ -56,6 +56,12 @@
 //	GET /x.png
 //	reqheader If-None-Match "97efa32"
 //
+// The verb “reqcookie” takes the cookie name as the <key> and sets a cookie
+// value for the request:
+//
+//	GET /index.html
+//	reqcookie user_id 123
+//
 // The verbs “postbody”, “postquery”, and “posttype” customize a POST, PATCH,
 // PUT or DELETE request.
 //
@@ -97,11 +103,12 @@
 //
 // The possible values for <value> are:
 //
-//	body - the full response body
-//	code - the HTTP status code
-//	header <key> - the value in the header line with the given key
-//	redirect - the target of a redirect, as found in the Location header
-//	trimbody - the response body, trimmed
+//		body - the full response body
+//		code - the HTTP status code
+//	  cookie <key> - the value of the cookie in the Set-Cookie response header
+//		header <key> - the value in the header line with the given key
+//		redirect - the target of a redirect, as found in the Location header
+//		trimbody - the response body, trimmed
 //
 // If a case contains no check of “code”, then it defaults to checking that
 // the HTTP status code is 200, as described above, with one exception:
@@ -283,6 +290,7 @@ type case_ struct {
 	method    string
 	url       string
 	headers   [][2]string
+	cookies   [][2]string
 	postbody  string
 	postquery string
 	posttype  string
@@ -330,6 +338,9 @@ func (c *case_) newRequest(u string) (*http.Request, error) {
 	for _, kv := range c.headers {
 		r.Header.Set(kv[0], kv[1])
 	}
+	for _, kv := range c.cookies {
+		r.AddCookie(&http.Cookie{Name: kv[0], Value: kv[1]})
+	}
 	return r, nil
 }
 
@@ -359,6 +370,13 @@ func (c *case_) check(resp *http.Response, body string) error {
 			value = trim(body)
 		case "code":
 			value = fmt.Sprint(resp.StatusCode)
+		case "cookie":
+			for _, ck := range resp.Cookies() {
+				if ck.Name == chk.whatArg {
+					value = ck.Value
+					break
+				}
+			}
 		case "header":
 			value = resp.Header.Get(chk.whatArg)
 		case "redirect":
@@ -508,6 +526,11 @@ func parseScript(file, text string) (*script, error) {
 			current.Case.headers = append(current.Case.headers, [2]string{k, v})
 			continue
 		}
+		if what == "reqcookie" {
+			k, v := splitOneField(args)
+			current.Case.cookies = append(current.Case.cookies, [2]string{k, v})
+			continue
+		}
 
 		// Look for case metadata.
 		var targ *string
@@ -544,6 +567,11 @@ func parseScript(file, text string) (*script, error) {
 			chk.whatArg, args = splitOneField(args)
 			if chk.whatArg == "" {
 				return nil, errorf("missing header name")
+			}
+		case "cookie":
+			chk.whatArg, args = splitOneField(args)
+			if chk.whatArg == "" {
+				return nil, errorf("missing cookie name")
 			}
 		}
 
