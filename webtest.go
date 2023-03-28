@@ -34,10 +34,10 @@
 //
 // # Requests
 //
-// Each case begins with a line starting with GET, HEAD, or POST.
-// The argument (the remainder of the line) is the URL to be used in the request.
-// Following this line, the request can be further customized using
-// lines of the form
+// Each case begins with a line starting with GET, HEAD, POST, PATCH, PUT or
+// DELETE. The argument (the remainder of the line) is the URL to be used in
+// the request. Following this line, the request can be further customized
+// using lines of the form
 //
 //	<verb> [<key>] <text>
 //
@@ -56,7 +56,8 @@
 //	GET /x.png
 //	reqheader If-None-Match "97efa32"
 //
-// The verbs “postbody”, “postquery”, and “posttype” customize a POST request.
+// The verbs “postbody”, “postquery”, and “posttype” customize a POST, PATCH,
+// PUT or DELETE request.
 //
 // For example:
 //
@@ -164,7 +165,6 @@ import (
 	"regexp"
 	"strings"
 	"testing"
-	"unicode/utf8"
 )
 
 // HandlerWithCheck returns an http.Handler that responds to each request
@@ -276,7 +276,7 @@ type script struct {
 	cases []*case_
 }
 
-// A case_ is a single test case (GET/HEAD/POST) in a script.
+// A case_ is a single test case (GET/HEAD/POST/PUT/PATCH/DELETE) in a script.
 type case_ struct {
 	file      string
 	line      int
@@ -310,56 +310,6 @@ func (c *case_) runHandler(h http.Handler) error {
 	}
 	h.ServeHTTP(w, r)
 	return c.check(w.Result(), w.Body.String())
-}
-
-// runServer runs a test case against the server at address addr.
-func (c *case_) runServer(addr string) error {
-	baseURL := ""
-	if strings.HasPrefix(addr, "http://") || strings.HasPrefix(addr, "https://") {
-		// addr is a base URL
-		if !strings.HasSuffix(addr, "/") {
-			addr += "/"
-		}
-		baseURL = addr
-	} else {
-		// addr is an HTTP proxy
-		baseURL = "http://" + addr + "/"
-	}
-
-	// Build full URL for request.
-	u := c.url
-	if !strings.HasPrefix(u, "http://") && !strings.HasPrefix(u, "https://") {
-		u = strings.TrimSuffix(baseURL, "/")
-		if !strings.HasPrefix(c.url, "/") {
-			u += "/"
-		}
-		u += c.url
-	}
-	req, err := c.newRequest(u)
-
-	if err != nil {
-		return fmt.Errorf("%s:%d: %s %s: %s", c.file, c.line, c.method, c.url, err)
-	}
-	tr := &http.Transport{}
-	if !strings.HasPrefix(u, baseURL) {
-		// If u does not begin with baseURL, then we're in the proxy case
-		// and we try to tunnel the network activity through the proxy's address.
-		proxyURL, err := url.Parse(baseURL)
-		if err != nil {
-			return fmt.Errorf("invalid addr: %v", err)
-		}
-		tr.Proxy = func(*http.Request) (*url.URL, error) { return proxyURL, nil }
-	}
-	resp, err := tr.RoundTrip(req)
-	if err != nil {
-		return fmt.Errorf("%s:%d: %s %s: %s", c.file, c.line, c.method, c.url, err)
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
-	if err != nil {
-		return fmt.Errorf("%s:%d: %s %s: reading body: %s", c.file, c.line, c.method, c.url, err)
-	}
-	return c.check(resp, string(body))
 }
 
 // newRequest creates a new request for the case c,
@@ -535,7 +485,7 @@ func parseScript(file, text string) (*script, error) {
 
 		// Look for start of new check.
 		switch what {
-		case "GET", "HEAD", "POST":
+		case "GET", "HEAD", "POST", "PUT", "PATCH", "DELETE":
 			if !lastLineWasBlank {
 				return nil, errorf("missing blank line before start of case")
 			}
@@ -550,7 +500,7 @@ func parseScript(file, text string) (*script, error) {
 		}
 
 		if lastLineWasBlank || current.Case == nil {
-			return nil, errorf("missing GET/HEAD/POST at start of check")
+			return nil, errorf("missing GET/HEAD/POST/PUT/PATCH/DELETE at start of check")
 		}
 
 		if what == "reqheader" {
@@ -572,8 +522,9 @@ func parseScript(file, text string) (*script, error) {
 			targ = &current.Case.hint
 		}
 		if targ != nil {
-			if strings.HasPrefix(what, "post") && current.Case.method != "POST" {
-				return nil, errorf("need POST (not %v) for %v", current.Case.method, what)
+			if strings.HasPrefix(what, "post") && current.Case.method != "POST" &&
+				current.Case.method != "PUT" && current.Case.method != "PATCH" && current.Case.method != "DELETE" {
+				return nil, errorf("need POST/PUT/PATCH/DELETE (not %v) for %v", current.Case.method, what)
 			}
 			if args != "" {
 				*targ = args
@@ -613,7 +564,7 @@ func parseScript(file, text string) (*script, error) {
 	}
 
 	// Finish each case.
-	// Compute POST body from POST query.
+	// Compute body from POST/PUT/PATCH/DELETE query.
 	// Check that each regexp compiles, and insert "code equals 200"
 	// in each case that doesn't already have a code check.
 	for _, cas := range script.cases {
@@ -671,16 +622,6 @@ func parseScript(file, text string) (*script, error) {
 func cut(s, sep string) (before, after string, ok bool) {
 	if i := strings.Index(s, sep); i >= 0 {
 		return s[:i], s[i+len(sep):], true
-	}
-	return s, "", false
-}
-
-// cutAny returns the result of cutting s around the first instance of
-// any code point from any.
-func cutAny(s, any string) (before, after string, ok bool) {
-	if i := strings.IndexAny(s, any); i >= 0 {
-		_, size := utf8.DecodeRuneInString(s[i:])
-		return s[:i], s[i+size:], true
 	}
 	return s, "", false
 }
