@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -78,5 +79,12 @@ func testWebtest(t *testing.T, glob string, do func(*case_) error) {
 				})
 			}
 		})
+	}
+}
+
+func TestCheckHandler(t *testing.T) {
+	fsys := os.DirFS("testdata")
+	if err := CheckHandler(fsys, "echo.*", http.HandlerFunc(echo)); err != nil {
+		t.Fatal(err)
 	}
 }
