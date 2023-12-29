@@ -34,7 +34,7 @@
 //
 // # Requests
 //
-// Each case begins with a line starting with GET, HEAD, POST, PATCH, PUT or
+// Each case begins with a line starting with GET, HEAD, POST, PATCH, PUT, or
 // DELETE. The argument (the remainder of the line) is the URL to be used in
 // the request. Following this line, the request can be further customized
 // using lines of the form
@@ -63,7 +63,7 @@
 //	reqcookie user_id 123
 //
 // The verbs “postbody”, “postquery”, and “posttype” customize a POST, PATCH,
-// PUT or DELETE request.
+// PUT, or DELETE request.
 //
 // For example:
 //
@@ -105,9 +105,9 @@
 //
 //	body - the full response body
 //	code - the HTTP status code
-//	cookie <key> - the value of the cookie in the Set-Cookie response header
+//	cookie <key> - the value of a cookie in the Set-Cookie response header
 //	header <key> - the value in the header line with the given key
-//	rawcookie <key> - the raw encoding of the cookie identified by <key> in the Set-Cookie response header
+//	rawcookie <key> - the raw encoding of a cookie in the Set-Cookie response header
 //	redirect - the target of a redirect, as found in the Location header
 //	trimbody - the response body, trimmed
 //
@@ -120,11 +120,10 @@
 // reduced to single spaces, leading and trailing spaces removed on
 // each line, and blank lines removed.
 //
-// The "rawcookie" value includes the cookie name and all the following
-// properties of the cookie as per the HTTP spec, so for example the value
-// could be:
+// The "rawcookie" value is the full serialized form of the cookie as seen in a
+// Set-Cookie header. For example, the value could be
 //
-//	ssn=secretid; path=/; secure; HttpOnly; SameSite=Lax
+//	id=abc123; Path=/; HttpOnly; Secure; SameSite=Lax
 //
 // The possible operators for <op> are:
 //
