@@ -17,17 +17,26 @@ GET http://example.com/echo
 reqheader Custom-Header abc
 header Custom-Header == abc
 
-PATCH http://example.com/echo
+PUT /foo
+body contains PUT /foo
+
+PATCH /foo
+body contains PATCH /foo
+
+DELETE /foo
+body contains DELETE /foo
+
+PATCH /echo
 postbody q=x
 reqcookie custom-cookie xyz
 body contains "q": ["x"]
 cookie custom-cookie == xyz
 
-PUT http://example.com/echo
+PUT /echo
 postbody q=y
 reqcookie custom-cookie xyz
 body contains "q": ["y"]
 rawcookie custom-cookie == custom-cookie=xyz; Path=/; Max-Age=30
 
-DELETE http://example.com/echo
+DELETE /echo
 body contains no query

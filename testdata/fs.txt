@@ -28,15 +28,3 @@ body !~ .
 GET /hello.html
 hint body contains `hello` (but should not)
 body !contains hello
-
-PATCH /hello.html
-code == 405
-header allow == OPTIONS, GET, HEAD
-
-PUT /hello.html
-code == 405
-header allow == OPTIONS, GET, HEAD
-
-DELETE /hello.html
-code == 405
-header allow == OPTIONS, GET, HEAD
