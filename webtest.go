@@ -330,10 +330,10 @@ func (c *case_) runHandler(h http.Handler) error {
 // using the URL u.
 func (c *case_) newRequest(u string) (*http.Request, error) {
 	body := c.requestBody()
-	r, err := http.NewRequest(c.method, u, body)
-	if err != nil {
-		return nil, err
-	}
+	r := httptest.NewRequest(c.method, u, body)
+	// Work around https://go.dev/issue/73151. The host is still in r.Host.
+	r.URL.Scheme = ""
+	r.URL.Host = ""
 	typ := c.posttype
 	if body != nil && typ == "" {
 		typ = "application/x-www-form-urlencoded"
